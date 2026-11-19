@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interviewer Control Deck (PRIVATE — Port 8766)</title>
+  <link rel="stylesheet" href="/static/interviewer.css" />
+</head>
+<body>
+  <header class="int-header">
+    <div class="int-header-left">
+      <span class="private-badge">PRIVATE INTERVIEWER DECK</span>
+      <h1>Microsoft Network Engineering Mock — Control Panel</h1>
+    </div>
+    <div class="int-header-right">
+      <div class="int-timer-box">
+        <span id="intTimerText">60:00</span>
+        <button class="btn btn-green" id="timerStartBtn">Start</button>
+        <button class="btn" id="timerPauseBtn">Pause</button>
+        <button class="btn" id="timerReset60Btn">60m</button>
+        <button class="btn" id="timerReset45Btn">45m</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="int-layout">
+    <!-- LEFT COLUMN: CONTROLS & LIVE FEED -->
+    <aside class="int-sidebar">
+      <section class="card">
+        <h2>Follow-Up Progression</h2>
+        <p class="muted">Clicking unlocks immediately in the candidate's browser &amp; appends stubs without touching his code.</p>
+        <div class="part-status-row" id="partStatusRow"></div>
+        <div class="btn-grid">
+          <button class="btn btn-green" id="unlockPart2Btn">Unlock Part 2 (Validation &amp; Edge Cases)</button>
+          <button class="btn btn-green" id="unlockPart3Btn">Unlock Part 3 (Top-K &amp; Scale Optimization)</button>
+          <button class="btn btn-danger" id="resetPartsBtn">Reset Problem to Part 1 Only</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head-row">
+          <h2>Live Candidate Activity</h2>
+          <span class="muted" id="lastActivityLabel">Waiting...</span>
+        </div>
+        <div class="feed-list" id="activityFeed">
+          <div class="empty">No runs recorded yet.</div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- RIGHT COLUMN: GUIDE / REFERENCE SOLUTIONS / LIVE CANDIDATE CODE -->
+    <section class="int-main">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="guide">Interviewer Playbook &amp; Hints</button>
+        <button class="tab-btn" data-tab="solutions">Reference Solutions</button>
+        <button class="tab-btn" data-tab="livecode">Candidate's Live Code</button>
+      </div>
+
+      <div class="tab-panel" id="panelGuide">
+        <article class="markdown-body" id="guideContent">Loading guide...</article>
+      </div>
+
+      <div class="tab-panel hidden" id="panelSolutions">
+        <pre class="code-view" id="solutionsContent"></pre>
+      </div>
+
+      <div class="tab-panel hidden" id="panelLivecode">
+        <div class="livecode-banner">Auto-refreshes every 2 seconds from <code>candidate/solution.py</code></div>
+        <pre class="code-view" id="liveCodeContent"></pre>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/interviewer.js"></script>
+</body>
+</html>

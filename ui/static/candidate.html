@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HackerRank — Microsoft Azure Networking Intern Assessment</title>
+  <link rel="stylesheet" href="/static/vendor/codemirror.css" />
+  <link rel="stylesheet" href="/static/candidate.css" />
+</head>
+<body>
+  <!-- TOP HACKERRANK HEADER -->
+  <header class="hr-header">
+    <div class="hr-header-left">
+      <div class="hr-logo" title="HackerRank Project Assessment">
+        <span class="hr-logo-mark">H</span>
+        <span class="hr-logo-bar"></span>
+      </div>
+      <div class="hr-title-block">
+        <span class="hr-org">Microsoft Azure Networking</span>
+        <span class="hr-sep">/</span>
+        <span class="hr-title">VNet Flow Log Analyzer</span>
+      </div>
+      <div class="hr-part-pills" id="partPills">
+        <button class="part-pill active" data-part="1" id="pillPart1">
+          <span class="pill-dot"></span>
+          <span>Part 1</span>
+          <span class="pill-score" id="scorePart1"></span>
+        </button>
+        <button class="part-pill locked" data-part="2" id="pillPart2" disabled title="Locked — Interviewer will unlock this follow-up">
+          <span class="pill-lock">&#128274;</span>
+          <span>Part 2</span>
+          <span class="pill-score" id="scorePart2"></span>
+        </button>
+        <button class="part-pill locked" data-part="3" id="pillPart3" disabled title="Locked — Interviewer will unlock this follow-up">
+          <span class="pill-lock">&#128274;</span>
+          <span>Part 3</span>
+          <span class="pill-score" id="scorePart3"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="hr-header-right">
+      <div class="hr-save-indicator" id="saveStatus">
+        <span class="save-dot saved"></span>
+        <span class="save-text">Saved</span>
+      </div>
+      <div class="hr-timer" id="timerDisplay" title="Assessment Countdown Timer (Controlled by Interviewer)">
+        <span class="timer-icon">&#9201;</span>
+        <span id="timerText">60:00</span>
+      </div>
+      <div class="hr-env-badge" id="envBadge">Python 3</div>
+      <button class="hr-icon-btn" id="themeToggleBtn" title="Toggle Dark / Light IDE Theme">
+        <span id="themeIcon">&#9788;</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN 3-PANE WORKSPACE -->
+  <main class="hr-workspace" id="workspace">
+    <!-- LEFT PANE: PROBLEM STATEMENT & SUBMISSIONS -->
+    <section class="pane-problem" id="paneProblem">
+      <div class="pane-tabs">
+        <button class="pane-tab active" data-left-tab="problem">Problem Description</button>
+        <button class="pane-tab" data-left-tab="submissions">
+          Submissions <span class="tab-badge" id="subCountBadge">0</span>
+        </button>
+      </div>
+
+      <div class="pane-body" id="leftTabProblem">
+        <div class="problem-meta-strip">
+          <span class="meta-chip chip-role">Network Engineering Intern</span>
+          <span class="meta-chip chip-diff">Easy &rarr; Medium</span>
+          <span class="meta-chip chip-type">Project-Style Assessment</span>
+        </div>
+        <article class="markdown-body" id="problemContent">
+          <div class="loading-placeholder">Loading problem specification...</div>
+        </article>
+      </div>
+
+      <div class="pane-body hidden" id="leftTabSubmissions">
+        <div class="submissions-header">
+          <h3>Run &amp; Submission History</h3>
+          <p class="muted">Every sample run and full submission is logged here.</p>
+        </div>
+        <div class="submissions-list" id="submissionsList">
+          <div class="empty-state">No test runs yet. Click <strong>Run Code</strong> or <strong>Submit Code</strong> to evaluate your solution.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HORIZONTAL RESIZER -->
+    <div class="resizer-v" id="resizerMain" title="Drag to resize panes"></div>
+
+    <!-- RIGHT WORKSPACE: PROJECT EXPLORER + EDITOR + TEST CONSOLE -->
+    <section class="pane-ide" id="paneIde">
+      <div class="ide-top-area" id="ideTopArea">
+        <!-- COLLAPSIBLE PROJECT FILE TREE (HackerRank Project-Style) -->
+        <aside class="project-sidebar" id="projectSidebar">
+          <div class="sidebar-header">
+            <span class="sidebar-title">PROJECT FILES</span>
+            <button class="sidebar-collapse-btn" id="toggleSidebarBtn" title="Collapse Explorer">&laquo;</button>
+          </div>
+          <div class="sidebar-folder">
+            <span class="folder-chevron">&#9662;</span>
+            <span class="folder-icon">&#128193;</span>
+            <span class="folder-name">candidate/</span>
+          </div>
+          <ul class="file-tree" id="fileTree">
+            <!-- Populated dynamically -->
+          </ul>
+          <div class="sidebar-footer">
+            <div class="shortcut-hint"><span>Save</span><kbd>Ctrl+S</kbd></div>
+            <div class="shortcut-hint"><span>Run</span><kbd>Ctrl+Enter</kbd></div>
+          </div>
+        </aside>
+
+        <!-- EDITOR AREA -->
+        <div class="editor-container">
+          <div class="editor-topbar">
+            <div class="editor-tabs-wrap">
+              <button class="sidebar-expand-btn hidden" id="expandSidebarBtn" title="Show Project Explorer">&#9776;</button>
+              <div class="editor-tabs" id="editorTabs">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+            <div class="editor-toolbar">
+              <span class="readonly-banner hidden" id="readonlyBanner">Read-Only</span>
+              <button class="tool-btn" id="fontDecBtn" title="Decrease Font Size">A-</button>
+              <button class="tool-btn" id="fontIncBtn" title="Increase Font Size">A+</button>
+              <button class="tool-btn" id="resetCodeBtn" title="Reset solution.py to starter stub">&#8634; Reset</button>
+            </div>
+          </div>
+
+          <div class="editor-host" id="editorHost">
+            <textarea id="codeEditor"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERTICAL RESIZER BETWEEN EDITOR AND CONSOLE -->
+      <div class="resizer-h" id="resizerConsole" title="Drag to resize test results panel"></div>
+
+      <!-- BOTTOM DRAWER: ACTION BAR + TEST RESULTS / CUSTOM INPUT -->
+      <section class="console-drawer" id="consoleDrawer">
+        <div class="console-header">
+          <div class="console-tabs">
+            <button class="console-tab active" data-console-tab="results">Test Results</button>
+            <button class="console-tab" data-console-tab="custom">Custom Input</button>
+            <button class="console-tab" data-console-tab="output">Console / Stdout</button>
+          </div>
+
+          <div class="action-bar">
+            <span class="active-target-label" id="activeTargetLabel">Target: Part 1</span>
+            <button class="btn-secondary" id="runSampleBtn" title="Run Public Sample Test Cases (Ctrl+Enter)">
+              <span class="btn-icon">&#9654;</span> Run Code
+            </button>
+            <button class="btn-primary" id="submitCodeBtn" title="Run Sample + Locked Hidden &amp; Stress Tests">
+              Submit Code
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 1: TEST RESULTS (HackerRank Split-Pane Scorecard) -->
+        <div class="console-body" id="consoleTabResults">
+          <div class="results-empty" id="resultsEmpty">
+            <div class="results-empty-inner">
+              <div class="results-empty-title">Ready to Test Your Solution</div>
+              <p>Click <strong>Run Code</strong> to test against visible sample cases with full diffs, or <strong>Submit Code</strong> to evaluate against hidden edge cases and 40,000-line performance stress tests.</p>
+            </div>
+          </div>
+
+          <div class="results-loading hidden" id="resultsLoading">
+            <div class="spinner"></div>
+            <div id="loadingText">Executing test cases in isolated Python runner...</div>
+          </div>
+
+          <div class="results-compile-err hidden" id="resultsCompileError">
+            <div class="compile-err-banner">Compilation / Syntax Error</div>
+            <pre class="code-box error-box" id="compileErrorText"></pre>
+          </div>
+
+          <div class="results-grid hidden" id="resultsGrid">
+            <div class="results-summary-bar" id="resultsSummaryBar">
+              <div class="summary-left">
+                <span class="summary-verdict" id="summaryVerdict">Passed</span>
+                <span class="summary-count" id="summaryCount">0 / 0 Test Cases Passed</span>
+              </div>
+              <div class="summary-right">
+                <span class="summary-time" id="summaryTime">0 ms</span>
+              </div>
+            </div>
+            <div class="results-split">
+              <div class="test-case-list" id="testCaseList"></div>
+              <div class="test-case-detail" id="testCaseDetail"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CUSTOM INPUT RUNNER -->
+        <div class="console-body hidden" id="consoleTabCustom">
+          <div class="custom-layout">
+            <div class="custom-inputs">
+              <div class="custom-row">
+                <label for="customFnSelect">Function:</label>
+                <select id="customFnSelect" class="hr-select">
+                  <option value="count_dropped_bytes">Part 1: count_dropped_bytes(logs)</option>
+                  <option value="count_valid_dropped_bytes">Part 2: count_valid_dropped_bytes(logs)</option>
+                  <option value="top_dropped_sources">Part 3: top_dropped_sources(logs, k)</option>
+                </select>
+                <button class="btn-secondary btn-sm" id="runCustomBtn">&#9654; Run Custom Input</button>
+              </div>
+              <label class="custom-label" for="customArgsInput">Arguments (JSON array matching function parameters):</label>
+              <textarea id="customArgsInput" class="custom-textarea" spellcheck="false"></textarea>
+            </div>
+            <div class="custom-output">
+              <div class="custom-output-header">
+                <span>Execution Output</span>
+                <span class="muted" id="customElapsed"></span>
+              </div>
+              <pre class="code-box" id="customResultBox">Click "Run Custom Input" to invoke your function directly with the arguments on the left.</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: RAW CONSOLE / STDOUT -->
+        <div class="console-body hidden" id="consoleTabOutput">
+          <pre class="code-box full-stdout" id="globalStdoutBox">Any `print()` output from your sample test runs will appear here.</pre>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- IN-PAGE RESET MODAL (Never uses window.confirm for VS Code Simple Browser compatibility) -->
+  <div class="modal-backdrop hidden" id="resetModal">
+    <div class="modal-card">
+      <div class="modal-header">Reset <code>solution.py</code>?</div>
+      <div class="modal-body">
+        This will discard your current edits in <code>solution.py</code> and restore the clean starter template for all unlocked parts. This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelResetBtn">Cancel</button>
+        <button class="btn-danger" id="confirmResetBtn">Reset Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- LOCAL OFFLINE VENDOR SCRIPTS -->
+  <script src="/static/vendor/codemirror.js"></script>
+  <script src="/static/vendor/python.js"></script>
+  <script src="/static/vendor/markdown.js"></script>
+  <script src="/static/vendor/matchbrackets.js"></script>
+  <script src="/static/vendor/closebrackets.js"></script>
+  <script src="/static/vendor/active-line.js"></script>
+  <script src="/static/vendor/comment.js"></script>
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/candidate.js"></script>
+</body>
+</html>

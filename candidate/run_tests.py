@@ -172,18 +172,18 @@ def main() -> int:
 
     part_config = {
         1: (
-            "Part 1: Top Offending Source IPs by Dropped Bytes",
-            "top_dropped_sources",
+            "Part 1: Basic Drop Filtering & Byte Aggregation",
+            "count_dropped_bytes",
             sample_tests.PART1_SAMPLE_TESTS,
         ),
         2: (
-            "Part 2: CIDR Longest Prefix Match & Internal Filtering",
-            "top_dropped_external_sources",
+            "Part 2: Strict Telemetry & IPv4 Validation",
+            "count_valid_dropped_bytes",
             sample_tests.PART2_SAMPLE_TESTS,
         ),
         3: (
-            "Part 3: Sliding-Window Burst / DDoS Detection",
-            "detect_burst_sources",
+            "Part 3: Top-K Ranking, Tie-Breaking & Scale Optimization",
+            "top_dropped_sources",
             sample_tests.PART3_SAMPLE_TESTS,
         ),
     }

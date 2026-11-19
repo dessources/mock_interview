@@ -2,14 +2,15 @@
 """
 PRIVATE INTERVIEWER HELPER: Live Follow-Up Unlocker
 
-Run this from your private terminal during the mock interview to seamlessly
-unlock Part 2 or Part 3 inside the candidate's folder without overwriting
-their existing code in `candidate/solution.py`!
+Run this from your private terminal during the mock interview (or click the
+Unlock buttons on the Interviewer Control Deck at http://127.0.0.1:8766)
+to seamlessly unlock Part 2 or Part 3 inside the candidate's workspace
+without overwriting any of their existing code in `candidate/solution.py`!
 
 Usage:
-  python3 interviewer/unlock_part.py 2       # Appends Part 2 prompt & function stubs
-  python3 interviewer/unlock_part.py 3       # Appends Part 3 prompt & function stub
-  python3 interviewer/unlock_part.py reset   # Resets candidate/PROBLEM.md to Part 1 only
+  python3 interviewer/unlock_part.py 2       # Appends Part 2 (Validation) prompt & stub
+  python3 interviewer/unlock_part.py 3       # Appends Part 3 (Top-K & Scale) prompt & stub
+  python3 interviewer/unlock_part.py reset   # Resets candidate/PROBLEM.md & solution.py to Part 1 only
 """
 
 from __future__ import annotations
@@ -24,109 +25,104 @@ CANDIDATE_SOLUTION = os.path.join(ROOT_DIR, "candidate", "solution.py")
 PART2_PROBLEM_MD = """
 ---
 
-## Part 2 (Follow-Up 1): CIDR Longest Prefix Match & Internal Subnet Filtering
+## Part 2 (Follow-Up 1): Handling Corrupted Telemetry & Shuffled Fields
 
 **Run Sample Tests:** `python3 run_tests.py --part 2`  
 **Submit Solution:** `python3 run_tests.py --part 2 --submit`
 
 ### Background
 
-During the incident review, the Azure Networking team notices that many high-volume `DROP` logs come from internal Azure fabric health probes (e.g., `10.0.0.0/8`), EXCEPT for specific subnets inside `10.0.0.0/8` that have been delegated to external DMZ appliances (e.g., `10.1.2.0/24`).
-
-In IP networking, routers classify an IP address against a routing table using **Longest Prefix Match (LPM)**:
-- A CIDR rule has the format `"<network_ip>/<prefix_len>"`, where `0 <= prefix_len <= 32`.
-- An IPv4 address matches a CIDR rule if the **top `prefix_len` most significant bits** of the 32-bit IPv4 address match the top `prefix_len` bits of `<network_ip>`.
-- When multiple CIDR rules match an IP address, the rule with the **largest `prefix_len`** (most specific subnet) wins.
-- If multiple matching rules share the exact same largest `prefix_len`, the rule that appears **earlier** in `cidr_rules` wins.
-- If no rule matches (or the target `ip` is invalid), the classification is `"UNMATCHED"`.
-- Malformed CIDR rules in `cidr_rules` must be ignored.
-
-### Task
-
-Implement two functions in `solution.py`:
-
-```python
-def match_longest_prefix(ip: str, cidr_rules: list[tuple[str, str]]) -> str:
-```
-Given a target IPv4 string `ip` and a list of `(cidr_prefix, route_tag)` tuples, return the `route_tag` of the Longest Prefix Match (or `"UNMATCHED"` if none match).
-
-```python
-def top_dropped_external_sources(
-    logs: list[str], k: int, cidr_rules: list[tuple[str, str]]
-) -> list[tuple[str, int]]:
-```
-Same as Part 1, except **exclude** any source IP whose Longest Prefix Match tag in `cidr_rules` equals `"INTERNAL"`. Source IPs that resolve to any other tag (including `"UNMATCHED"`) must be included.
-"""
-
-PART2_SOLUTION_STUB = """
-
-# ============================================================================
-# PART 2: CIDR Longest Prefix Match & Internal Subnet Filtering
-# ============================================================================
-
-def match_longest_prefix(ip: str, cidr_rules: list[tuple[str, str]]) -> str:
-    \"\"\"
-    Return the route_tag of the CIDR rule that matches `ip` with the longest
-    prefix length (0..32). If no rule matches, return "UNMATCHED".
-    \"\"\"
-    # TODO: Write your Part 2 LPM implementation here
-    pass
-
-
-def top_dropped_external_sources(
-    logs: list[str], k: int, cidr_rules: list[tuple[str, str]]
-) -> list[tuple[str, int]]:
-    \"\"\"
-    Return the top `k` source IPs by total dropped bytes, EXCLUDING any
-    source IP whose `match_longest_prefix(src_ip, cidr_rules)` == "INTERNAL".
-    \"\"\"
-    # TODO: Write your Part 2 filtered aggregation here
-    pass
-"""
-
-PART3_PROBLEM_MD = """
----
-
-## Part 3 (Follow-Up 2): Sliding-Window Burst / DDoS Anomaly Detection
-
-**Run Sample Tests:** `python3 run_tests.py --part 3`  
-**Submit Solution:** `python3 run_tests.py --part 3 --submit`
-
-### Background
-
-Some attackers avoid topping the total-bytes leaderboard by sending many small `DROP` probe packets (e.g., 64-byte TCP SYN scans) in a rapid burst.
+Your Part 1 script works great on clean logs! Now we are deploying it to production Azure collectors, where telemetry lines occasionally arrive **corrupted**, **incomplete**, or with `KEY=VALUE` fields in **arbitrary order**.
 
 ### Task
 
 Implement the function:
 
 ```python
-def detect_burst_sources(
-    logs: list[str], window_sec: int, threshold: int
-) -> list[str]:
+def count_valid_dropped_bytes(logs: list[str]) -> dict[str, int]:
 ```
 
-1. Consider only **valid** log lines where `ACTION=DROP`. (Note: log lines are **not** guaranteed to arrive in chronological order!)
-2. Identify every unique `<src_ip>` that has **at least `threshold`** (`>= threshold`) `DROP` events occurring within **any inclusive rolling time window** of length `window_sec` seconds — i.e., `[t, t + window_sec]` where `t_last - t_first <= window_sec`.
-3. Return the offending source IPs sorted in **ascending lexicographical order**.
-4. Expected Time Complexity: $\\mathcal{O}(N \\log N)$ using sorting + a Two-Pointer / Sliding Window scan.
+A log line is **valid** if and only if **all** of the following hold:
+1. After stripping leading/trailing whitespace, the line consists of **6 space-separated tokens**: `<timestamp>` followed by 5 `KEY=VALUE` tokens.
+2. `<timestamp>` is a non-negative integer (`>= 0`, digits only).
+3. The 5 `KEY=VALUE` tokens contain **each** of the required keys (`SRC`, `DST`, `PORT`, `ACTION`, `BYTES`) **exactly once**, in **any order**.
+4. Both `<src_ip>` (`SRC`) and `<dst_ip>` (`DST`) are valid **IPv4 addresses** (`A.B.C.D`):
+   - Exactly **4** dot-separated octets.
+   - Digits only, **no leading zeros** (e.g., `"0"` is valid, `"01"` or `"00"` is invalid).
+   - Each octet is in the inclusive range `0 <= octet <= 255`.
+5. `<dst_port>` (`PORT`) is an integer in the valid TCP/UDP port range `1 <= port <= 65535`.
+6. `<ACTION>` is either `"ALLOW"` or `"DROP"`.
+7. `<byte_count>` (`BYTES`) is a non-negative integer (`>= 0`, digits only).
+
+Any line that violates any rule above must be **silently ignored**. Return `{src_ip: total_dropped_bytes}` for all valid `ACTION=DROP` lines.
+"""
+
+PART2_SOLUTION_STUB = """
+
+# ============================================================================
+# PART 2: Strict Telemetry Validation & Out-of-Order Field Parsing
+# ============================================================================
+
+def count_valid_dropped_bytes(logs: list[str]) -> dict[str, int]:
+    \"\"\"
+    Strictly validate raw NSG flow logs (ignoring malformed IPs, ports,
+    actions, negative values, duplicate/missing keys, and handling shuffled
+    KEY=VALUE fields) and return {src_ip: total_dropped_bytes} for valid
+    ACTION=DROP lines.
+    \"\"\"
+    # TODO: Write your Part 2 implementation here
+    pass
+"""
+
+PART3_PROBLEM_MD = """
+---
+
+## Part 3 (Follow-Up 2): Top-K Offenders, Tie-Breaking & High-Scale Optimization
+
+**Run Sample Tests:** `python3 run_tests.py --part 3`  
+**Submit Solution:** `python3 run_tests.py --part 3 --submit`
+
+### Background
+
+During a large incident, the Azure security dashboard does not want a dictionary with tens of thousands of source IPs—it only wants the **Top `k` worst offenders** ranked deterministically, and it needs to process **50,000+ log lines** within strict latency limits.
+
+### Task
+
+Implement the function:
+
+```python
+def top_dropped_sources(logs: list[str], k: int) -> list[tuple[str, int]]:
+```
+
+1. Reuse your **Part 2** validation and `ACTION=DROP` aggregation logic (all malformed lines are silently ignored).
+2. Return the top `k` source IPs as a list of `(src_ip, total_dropped_bytes)` tuples:
+   - Sorted by `total_dropped_bytes` in **descending** order.
+   - If two source IPs have the exact same `total_dropped_bytes`, break ties by `src_ip` in **ascending lexicographical (ASCII)** order (e.g., `"10.0.0.10"` comes before `"10.0.0.2"` because `'1' < '2'`).
+   - If `k <= 0` or there are no valid `DROP` lines, return `[]`.
+   - If fewer than `k` unique source IPs have dropped traffic, return all of them in ranked order.
+
+### Performance Constraints
+- `0 <= len(logs) <= 100,000`
+- `0 <= k <= 10,000`
+- Expected Time Complexity: $\\mathcal{O}(N + U \\log K)$ using a heap (`heapq.nsmallest`) — or $\\mathcal{O}(N + U \\log U)$ — where $N$ is the number of log lines and $U$ is the number of unique source IPs.
 """
 
 PART3_SOLUTION_STUB = """
 
 # ============================================================================
-# PART 3: Sliding-Window Burst / DDoS Anomaly Detection
+# PART 3: Top-K Offenders, Tie-Breaking & High-Scale Optimization
 # ============================================================================
 
-def detect_burst_sources(
-    logs: list[str], window_sec: int, threshold: int
-) -> list[str]:
+def top_dropped_sources(logs: list[str], k: int) -> list[tuple[str, int]]:
     \"\"\"
-    Return a lexicographically sorted list of unique source IPs that trigger
-    at least `threshold` valid DROP events within any inclusive `window_sec`
-    time window [t, t + window_sec].
+    Return the top `k` valid offending source IPs as (src_ip, total_dropped_bytes)
+    sorted by:
+      1. total_dropped_bytes descending
+      2. src_ip ascending (lexicographical tie-breaker)
+
+    Returns [] if k <= 0 or no valid DROP lines exist.
     \"\"\"
-    # TODO: Write your Part 3 sliding-window implementation here
+    # TODO: Write your Part 3 implementation here
     pass
 """
 
@@ -157,11 +153,11 @@ def unlock(target: str) -> None:
             with open(CANDIDATE_PROBLEM, "w", encoding="utf-8") as f:
                 f.write(problem_text)
             print("✔ Appended Part 2 instructions to candidate/PROBLEM.md")
-        if "def match_longest_prefix" not in solution_text:
+        if "def count_valid_dropped_bytes" not in solution_text:
             solution_text = solution_text.rstrip() + "\n" + PART2_SOLUTION_STUB
             with open(CANDIDATE_SOLUTION, "w", encoding="utf-8") as f:
                 f.write(solution_text)
-            print("✔ Appended Part 2 function stubs to candidate/solution.py (existing code preserved)")
+            print("✔ Appended Part 2 function stub to candidate/solution.py (existing code preserved)")
 
     if target in ("3", "all"):
         if "## Part 3 (Follow-Up 2):" not in problem_text:
@@ -169,7 +165,7 @@ def unlock(target: str) -> None:
             with open(CANDIDATE_PROBLEM, "w", encoding="utf-8") as f:
                 f.write(problem_text)
             print("✔ Appended Part 3 instructions to candidate/PROBLEM.md")
-        if "def detect_burst_sources" not in solution_text:
+        if "def top_dropped_sources" not in solution_text:
             solution_text = solution_text.rstrip() + "\n" + PART3_SOLUTION_STUB
             with open(CANDIDATE_SOLUTION, "w", encoding="utf-8") as f:
                 f.write(solution_text)
